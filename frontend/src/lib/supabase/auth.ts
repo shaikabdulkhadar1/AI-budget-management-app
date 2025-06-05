@@ -17,8 +17,14 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    console.error("Error signing out:", error);
+    return { error };
+  }
 };
 
 export const getCurrentUser = async () => {

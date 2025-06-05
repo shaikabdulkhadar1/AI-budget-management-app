@@ -1,20 +1,34 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
   StyleSheet,
-  Alert,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
+  Alert,
+  ScrollView,
 } from "react-native";
-import { signIn, signUp } from "../lib/supabase/auth";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-export default function LoginScreen({ navigation }: any) {
+type AuthStackParamList = {
+  SignIn: undefined;
+  SignUp: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
+
+export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
+  const { signIn } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -22,112 +36,158 @@ export default function LoginScreen({ navigation }: any) {
       return;
     }
 
-    setLoading(true);
     try {
-      const { error } = isLogin
-        ? await signIn(email, password)
-        : await signUp(email, password);
-
-      if (error) throw error;
-
-      if (!isLogin) {
-        Alert.alert(
-          "Success",
-          "Registration successful! Please check your email for verification."
-        );
-      }
+      setLoading(true);
+      await signIn(email, password);
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      console.error("Auth error:", error);
+      Alert.alert(
+        "Error",
+        error.message || "An error occurred during authentication"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleAuth}
-        disabled={loading}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
       >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.buttonText}>{isLogin ? "Login" : "Sign Up"}</Text>
-        )}
-      </TouchableOpacity>
+        <ScrollView>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Welcome Back!</Text>
+              <Text style={styles.subtitle}>Sign in to continue</Text>
+            </View>
 
-      <TouchableOpacity
-        style={styles.switchButton}
-        onPress={() => setIsLogin(!isLogin)}
-      >
-        <Text style={styles.switchButtonText}>
-          {isLogin
-            ? "Don't have an account? Sign Up"
-            : "Already have an account? Login"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleAuth}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.buttonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.createAccountLink}
+                onPress={() => navigation.navigate("SignUp")}
+              >
+                <Text style={styles.createAccountText}>
+                  Don't have an account? Create one
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: "center",
     backgroundColor: "#fff",
   },
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
+  header: {
+    marginBottom: 40,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
+    color: "#000",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+  },
+  form: {
+    gap: 20,
+  },
+  inputContainer: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
     fontSize: 16,
+    padding: 12,
+    backgroundColor: "#F2F2F7",
+    borderRadius: 8,
+    color: "#000",
   },
   button: {
     backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 10,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
-    color: "white",
+    color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   switchButton: {
-    marginTop: 20,
     alignItems: "center",
+    padding: 16,
   },
   switchButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+  },
+  createAccountLink: {
+    alignItems: "center",
+    padding: 16,
+  },
+  createAccountText: {
     color: "#007AFF",
     fontSize: 16,
   },

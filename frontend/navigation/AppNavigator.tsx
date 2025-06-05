@@ -1,9 +1,9 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import DashboardScreen from "../screens/DashboardScreen";
-import AddExpenseScreen from "../screens/AddExpenseScreen";
-import InsightsScreen from "../screens/InsightsScreen";
+import DashboardScreen from "../src/screens/DashboardScreen";
+import AddExpenseScreen from "../src/screens/AddExpenseScreen";
+import InsightsScreen from "../src/screens/InsightsScreen";
 
 const Stack = createNativeStackNavigator();
 

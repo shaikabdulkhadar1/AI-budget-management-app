@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,79 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ScreenProps } from "./types";
+import { useAuth } from "../contexts/AuthContext";
+import { userService, UserDetails } from "../services/userService";
+import { auth } from "../lib/firebase/config";
 
 export default function ProfileScreen({ navigation }: ScreenProps) {
+  const { signOut } = useAuth();
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserDetails();
+  }, []);
+
+  const loadUserDetails = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser?.uid) {
+        console.log("No authenticated user found");
+        return;
+      }
+
+      console.log("Fetching details for user:", currentUser.uid);
+      const details = await userService.getUserDetails(currentUser.uid);
+      console.log("Fetched user details:", details);
+      setUserDetails(details);
+    } catch (error) {
+      console.error("Error loading user details:", error);
+      Alert.alert("Error", "Failed to load user details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      Alert.alert("Error", "Failed to sign out");
+    }
+  };
+
+  const getFullName = () => {
+    if (!userDetails?.firstName && !userDetails?.lastName) {
+      return auth.currentUser?.email?.split("@")[0] || "";
+    }
+    const firstName = userDetails?.firstName || "";
+    const lastName = userDetails?.lastName || "";
+    return `${firstName} ${lastName}`.trim();
+  };
+
+  const getInitials = () => {
+    if (!userDetails?.firstName && !userDetails?.lastName) {
+      return auth.currentUser?.email?.charAt(0).toUpperCase() || "";
+    }
+    const first = userDetails?.firstName?.charAt(0) || "";
+    const last = userDetails?.lastName?.charAt(0) || "";
+    return `${first}${last}`.toUpperCase();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
@@ -18,7 +86,9 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
         <View style={styles.profileImageContainer}>
           <Image
             source={{
-              uri: "https://ui-avatars.com/api/?name=John+Doe&background=007AFF&color=fff&size=200",
+              uri:
+                userDetails?.photoURL ||
+                `https://ui-avatars.com/api/?name=${getInitials()}&background=007AFF&color=fff&size=200`,
             }}
             style={styles.profileImage}
           />
@@ -26,8 +96,8 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
             <Icon name="camera-alt" size={20} color="white" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.userName}>John Doe</Text>
-        <Text style={styles.userEmail}>john.doe@example.com</Text>
+        <Text style={styles.userName}>{getFullName()}</Text>
+        <Text style={styles.userEmail}>{auth.currentUser?.email}</Text>
       </View>
 
       {/* Account Settings */}
@@ -123,9 +193,9 @@ export default function ProfileScreen({ navigation }: ScreenProps) {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Icon name="logout" size={24} color="#FF3B30" />
-        <Text style={styles.logoutText}>Log Out</Text>
+        <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -135,6 +205,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   profileHeader: {
     backgroundColor: "white",
