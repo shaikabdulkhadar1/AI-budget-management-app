@@ -14,9 +14,11 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import AddTransactionScreen from "./src/screens/AddTransactionScreen";
 import CreateAccountScreen from "./src/screens/CreateAccountScreen";
+import TransactionsScreen from "./src/screens/TransactionsScreen";
 
 // Import context
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { ThemeProvider } from "./src/contexts/ThemeContext";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -98,6 +100,13 @@ function TabNavigator() {
             presentation: "modal",
           }}
         />
+        <Stack.Screen
+          name="Transactions"
+          component={TransactionsScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack.Navigator>
     </View>
   );
@@ -106,6 +115,7 @@ function TabNavigator() {
 function AuthStack() {
   return (
     <Stack.Navigator
+      id={undefined}
       screenOptions={{
         headerShown: false,
       }}
@@ -128,7 +138,7 @@ function Navigation() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
       {session ? (
         <Stack.Screen name="Main" component={TabNavigator} />
       ) : (
@@ -141,9 +151,11 @@ function Navigation() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Navigation />
-      </NavigationContainer>
+      <ThemeProvider>
+        <NavigationContainer>
+          <Navigation />
+        </NavigationContainer>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

@@ -8,6 +8,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
 } from "firebase/firestore";
 
 export interface Transaction {
@@ -73,6 +74,22 @@ export const transactionService = {
       await deleteDoc(doc(db, "transactions", transactionId));
     } catch (error) {
       console.error("Error deleting transaction:", error);
+      throw error;
+    }
+  },
+
+  async updateTransaction(
+    transactionId: string,
+    transaction: Transaction
+  ): Promise<void> {
+    try {
+      const transactionRef = doc(db, "transactions", transactionId);
+      await updateDoc(transactionRef, {
+        ...transaction,
+        amount: Number(transaction.amount),
+      });
+    } catch (error) {
+      console.error("Error updating transaction:", error);
       throw error;
     }
   },
